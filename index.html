@@ -264,6 +264,14 @@
       let targetUrl = GAS_EXEC_URL;
       
       if (profile) {
+        // ✅ FIX: เก็บข้อมูลไว้ใน sessionStorage ก่อน redirect
+        sessionStorage.setItem('liffProfile', JSON.stringify({
+          userId: profile.userId || '',
+          displayName: profile.displayName || '',
+          pictureUrl: profile.pictureUrl || ''
+        }));
+        log('Profile saved to sessionStorage');
+        
         const qs = new URLSearchParams({
           luid: profile.userId || '',
           lname: profile.displayName || '',
