@@ -122,6 +122,22 @@
     });
   </script>
 
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+
+    <script>
+        function initializeLiff(myLiffId) {
+            liff.init({ liffId: myLiffId })
+                .then(() => {
+                    loadSelectOptions();
+                })
+                .catch((err) => {
+                    console.error('LIFF Initialization failed', err);
+                });
+        }
+
+</script>
+
   
 </body>
 </html>
