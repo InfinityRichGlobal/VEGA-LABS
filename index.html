@@ -20,21 +20,19 @@
   <div class="wrap">
     <div id="loading" class="loader">
       <div class="spinner"></div>
-      <div>กำลังเตรียมแบบฟอร์ม…</div>
+      <div>กำลังเข้าสู่หน้าการสั่งซื้อ …</div>
       <div class="muted">โปรดรอสักครู่</div>
     </div>
     <iframe id="myIframe" class="frame" style="display:none"></iframe>
   </div>
-
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
     const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
     const iframe  = document.getElementById('myIframe');
     const loading = document.getElementById('loading');
-
     let liffProfile = { userId: '', displayName: '', pictureUrl: '' };
-
+    
     (async () => {
       const usp = new URLSearchParams(location.search);
       
@@ -45,7 +43,7 @@
         iframe.style.display = 'block';
         return;
       }
-
+      
       try {
         await liff.init({ liffId: MY_LIFF_ID });
         
@@ -53,29 +51,30 @@
           liff.login({ redirectUri: location.href });
           return;
         }
-
+        
         const p = await liff.getProfile();
         liffProfile = {
           userId: p.userId || '',
           displayName: p.displayName || '',
           pictureUrl: p.pictureUrl || ''
         };
-
-        console.log('✅ LIFF Profile:', liffProfile);
-
-        // เข้ารหัสข้อมูลเป็น Base64 เพื่อหลีกเลี่ยง OAuth redirect
-        // encode แบบรองรับ UTF-8
-const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(liffProfile))));
-
         
-        console.log('🔐 Encoded LIFF data');
-
-        // โหลด iframe พร้อม encoded data
-        iframe.src = `${GAS_EXEC_URL}?liffdata=${encodeURIComponent(encoded)}`;
-
+        console.log('✅ LIFF Profile:', liffProfile);
+        
+        // โหลด iframe ก่อน
+        iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
-
+        
+        // รอ iframe โหลดเสร็จ แล้วส่งข้อมูล LIFF ผ่าน postMessage
+        iframe.onload = () => {
+          console.log('📤 Sending LIFF via postMessage:', liffProfile);
+          iframe.contentWindow.postMessage({
+            type: 'LIFF_DATA',
+            data: liffProfile
+          }, '*');
+        };
+        
       } catch (e) {
         console.warn('⚠️ LIFF failed:', e);
         // ล้มเหลว → โหลดแบบไม่มี LIFF
