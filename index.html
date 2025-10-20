@@ -122,21 +122,48 @@
     });
   </script>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<!-- ใส่ LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
+  const MY_LIFF_ID   = '2008326648-y4KXg6Ax'; // ของโปรเจกต์คุณ
 
+  const iframe = document.getElementById('myIframe');
 
-    <script>
-        function initializeLiff(myLiffId) {
-            liff.init({ liffId: myLiffId })
-                .then(() => {
-                    loadSelectOptions();
-                })
-                .catch((err) => {
-                    console.error('LIFF Initialization failed', err);
-                });
-        }
+  (async () => {
+    // เทสบน desktop: เพิ่มพารามิเตอร์ ?noliff=1 เพื่อข้าม LIFF
+    const usp = new URLSearchParams(location.search);
+    if (usp.get('noliff') === '1') {
+      iframe.src = GAS_EXEC_URL; // ไม่มีโปรไฟล์
+      return;
+    }
 
+    try {
+      await liff.init({ liffId: MY_LIFF_ID });
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return; // จะเด้ง login แล้วกลับมา
+      }
+      const p = await liff.getProfile();
+      const qs = new URLSearchParams({
+        luid:  p.userId || '',
+        lname: p.displayName || '',
+        lpict: p.pictureUrl || ''
+      }).toString();
+      iframe.src = GAS_EXEC_URL + '?' + qs; // ส่งโปรไฟล์ลง iframe
+    } catch (e) {
+      console.warn('LIFF failed, fallback no profile', e);
+      iframe.src = GAS_EXEC_URL;
+    }
+  })();
+
+  // ป้องกัน error ถ้าไม่มีปุ่มจริง
+  const homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', () => { iframe.src = GAS_EXEC_URL; });
+  }
 </script>
+
 
   
 </body>
