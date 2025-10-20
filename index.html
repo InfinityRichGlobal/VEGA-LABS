@@ -64,7 +64,9 @@
         console.log('✅ LIFF Profile:', liffProfile);
 
         // เข้ารหัสข้อมูลเป็น Base64 เพื่อหลีกเลี่ยง OAuth redirect
-        const encoded = btoa(JSON.stringify(liffProfile));
+        // encode แบบรองรับ UTF-8
+const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(liffProfile))));
+
         
         console.log('🔐 Encoded LIFF data');
 
