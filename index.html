@@ -20,7 +20,7 @@
   <div class="wrap">
     <div id="loading" class="loader">
       <div class="spinner"></div>
-      <div>กำลังเข้าสู่หน้าการสั่งซื้อ …</div>
+      <div>กำลังเตรียมแบบฟอร์ม…</div>
       <div class="muted">โปรดรอสักครู่</div>
     </div>
     <iframe id="myIframe" class="frame" style="display:none"></iframe>
@@ -61,14 +61,16 @@
         
         console.log('✅ LIFF Profile:', liffProfile);
         
-        // โหลด iframe ก่อน
+        // ✅ โหลด iframe ก่อน (ไม่ใช้ query string)
         iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
         
-        // รอ iframe โหลดเสร็จ แล้วส่งข้อมูล LIFF ผ่าน postMessage
+        // ✅ รอ iframe โหลดเสร็จ แล้วส่งข้อมูล LIFF ผ่าน postMessage
         iframe.onload = () => {
           console.log('📤 Sending LIFF via postMessage:', liffProfile);
+          
+          // ส่งข้อมูลไปยัง iframe
           iframe.contentWindow.postMessage({
             type: 'LIFF_DATA',
             data: liffProfile
