@@ -31,13 +31,14 @@
     const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
     const iframe  = document.getElementById('myIframe');
     const loading = document.getElementById('loading');
-    let liffProfile = { userId: '', displayName: '', pictureUrl: '' };
     
+    // ✅ ใช้ sessionStorage เก็บข้อมูล LIFF (ใช้งานได้ใน iframe)
     (async () => {
       const usp = new URLSearchParams(location.search);
       
       // โหมดเทส (ไม่ใช้ LIFF)
       if (usp.get('noliff') === '1') {
+        sessionStorage.removeItem('liff_profile');
         iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
@@ -53,7 +54,7 @@
         }
         
         const p = await liff.getProfile();
-        liffProfile = {
+        const liffProfile = {
           userId: p.userId || '',
           displayName: p.displayName || '',
           pictureUrl: p.pictureUrl || ''
@@ -61,20 +62,18 @@
         
         console.log('✅ LIFF Profile:', liffProfile);
         
-        // ✅ วิธีใหม่: ส่งข้อมูลผ่าน URL Hash (ไม่โดน OAuth redirect)
-        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(liffProfile))));
-        console.log('🔐 Encoded length:', encoded.length);
+        // ✅ เก็บลง sessionStorage (iframe จะอ่านได้)
+        sessionStorage.setItem('liff_profile', JSON.stringify(liffProfile));
+        console.log('💾 Saved to sessionStorage');
         
-        // โหลด iframe พร้อม hash
-        iframe.src = `${GAS_EXEC_URL}#liff=${encoded}`;
+        // โหลด iframe
+        iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
         
-        console.log('📤 Sent LIFF via URL hash');
-        
       } catch (e) {
         console.warn('⚠️ LIFF failed:', e);
-        // ล้มเหลว → โหลดแบบไม่มี LIFF
+        sessionStorage.removeItem('liff_profile');
         iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
