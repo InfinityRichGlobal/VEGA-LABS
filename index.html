@@ -61,21 +61,16 @@
         
         console.log('✅ LIFF Profile:', liffProfile);
         
-        // ✅ โหลด iframe ก่อน (ไม่ใช้ query string)
-        iframe.src = GAS_EXEC_URL;
+        // ✅ วิธีใหม่: ส่งข้อมูลผ่าน URL Hash (ไม่โดน OAuth redirect)
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(liffProfile))));
+        console.log('🔐 Encoded length:', encoded.length);
+        
+        // โหลด iframe พร้อม hash
+        iframe.src = `${GAS_EXEC_URL}#liff=${encoded}`;
         loading.style.display = 'none';
         iframe.style.display = 'block';
         
-        // ✅ รอ iframe โหลดเสร็จ แล้วส่งข้อมูล LIFF ผ่าน postMessage
-        iframe.onload = () => {
-          console.log('📤 Sending LIFF via postMessage:', liffProfile);
-          
-          // ส่งข้อมูลไปยัง iframe
-          iframe.contentWindow.postMessage({
-            type: 'LIFF_DATA',
-            data: liffProfile
-          }, '*');
-        };
+        console.log('📤 Sent LIFF via URL hash');
         
       } catch (e) {
         console.warn('⚠️ LIFF failed:', e);
