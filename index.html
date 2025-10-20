@@ -1,170 +1,74 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VEGA LABS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="VEGA LABS ASS." />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-capable" content="yes">
-  <link rel="shortcut icon" type="image/png" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
-  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  
-
+  <link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: 'Arial', sans-serif;
-      height: 100%;
-      background-color: #f5f5f5;
-    }
-
-    .container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-    }
-
-    .login-container {
-      background-color: white;
-      padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      width: 300px;
-    }
-
-    h1 {
-      color: #333;
-      font-size: 24px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #555;
-    }
-
-    #content {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh; /* Full viewport height */
-      background-color: white; /* Added background color for clarity */
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-
-    #homeBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background-color: #333;
-      color: white;
-      border: none;
-      font-size: 24px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    #homeBtn:hover {
-      background-color: #555;
-    }
+    html,body { height:100%; margin:0; font-family: system-ui, Arial; background:#f7fafc; }
+    .wrap { height:100%; display:grid; place-items:center; }
+    .frame { width:100%; height:100vh; border:0; background:#fff; }
+    .loader { display:grid; place-items:center; gap:8px; color:#374151; }
+    .spinner{ width:36px; height:36px; border:3px solid #e5e7eb; border-top-color:#0ea5e9; border-radius:50%; animation:spin 1s linear infinite }
+    @keyframes spin{to{ transform:rotate(360deg) }}
+    .muted { color:#6b7280; font-size:12px; }
   </style>
 </head>
 <body>
-
-  <div id="content">
-    <iframe id="myIframe" src="https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec"></iframe>
-
+  <div class="wrap">
+    <!-- รอ LIFF ก่อน ถึงจะ set src -->
+    <div id="loading" class="loader">
+      <div class="spinner"></div>
+      <div>กำลังเตรียมแบบฟอร์ม…</div>
+      <div class="muted">โปรดรอสักครู่</div>
+    </div>
+    <iframe id="myIframe" class="frame" style="display:none"></iframe>
   </div>
 
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    document.getElementById('homeBtn').addEventListener('click', function() {
-      var iframe = document.getElementById('myIframe');
-      iframe.src = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
-    });
-  </script>
+    const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
+    const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
 
-<!-- ใส่ LIFF SDK -->
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script>
-  const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
-  const MY_LIFF_ID   = '2008326648-y4KXg6Ax'; // ของโปรเจกต์คุณ
+    const iframe  = document.getElementById('myIframe');
+    const loading = document.getElementById('loading');
 
-  const iframe = document.getElementById('myIframe');
-
-  (async () => {
-    // เทสบน desktop: เพิ่มพารามิเตอร์ ?noliff=1 เพื่อข้าม LIFF
-    const usp = new URLSearchParams(location.search);
-    if (usp.get('noliff') === '1') {
-      iframe.src = GAS_EXEC_URL; // ไม่มีโปรไฟล์
-      return;
-    }
-
-    try {
-      await liff.init({ liffId: MY_LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: location.href });
-        return; // จะเด้ง login แล้วกลับมา
+    (async () => {
+      const usp = new URLSearchParams(location.search);
+      // โหมดเทสบนเดสก์ท็อป (ไม่ใช้ LIFF)
+      if (usp.get('noliff') === '1') {
+        iframe.src = GAS_EXEC_URL; 
+        loading.style.display = 'none';
+        iframe.style.display = 'block';
+        return;
       }
-      const p = await liff.getProfile();
-      const qs = new URLSearchParams({
-        luid:  p.userId || '',
-        lname: p.displayName || '',
-        lpict: p.pictureUrl || ''
-      }).toString();
-      iframe.src = GAS_EXEC_URL + '?' + qs; // ส่งโปรไฟล์ลง iframe
-    } catch (e) {
-      console.warn('LIFF failed, fallback no profile', e);
-      iframe.src = GAS_EXEC_URL;
-    }
-  })();
 
-  // ป้องกัน error ถ้าไม่มีปุ่มจริง
-  const homeBtn = document.getElementById('homeBtn');
-  if (homeBtn) {
-    homeBtn.addEventListener('click', () => { iframe.src = GAS_EXEC_URL; });
-  }
-</script>
+      try {
+        await liff.init({ liffId: MY_LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: location.href }); // กลับมาหน้านี้
+          return;
+        }
+        const p = await liff.getProfile();
+        const qs = new URLSearchParams({
+          luid:  p.userId || '',
+          lname: p.displayName || '',
+          lpict: p.pictureUrl || ''
+        }).toString();
 
-
-  
+        iframe.src = GAS_EXEC_URL + '?' + qs;
+        loading.style.display = 'none';
+        iframe.style.display = 'block';
+      } catch (e) {
+        console.warn('LIFF failed → เปิดแบบไม่มีโปรไฟล์', e);
+        iframe.src = GAS_EXEC_URL;
+        loading.style.display = 'none';
+        iframe.style.display = 'block';
+      }
+    })();
+  </script>
 </body>
 </html>
