@@ -63,30 +63,13 @@
 
         console.log('✅ LIFF Profile:', liffProfile);
 
-        // ฟังก์ชันส่งข้อมูล
-        function sendProfile() {
-          console.log('📤 Sending LIFF data to iframe...');
-          iframe.contentWindow.postMessage({
-            type: 'LIFF_PROFILE',
-            data: liffProfile
-          }, '*');
-        }
-
-        // รอให้ iframe บอกว่าพร้อมแล้ว
-        window.addEventListener('message', (event) => {
-          if (event.data.type === 'IFRAME_READY') {
-            console.log('✅ iframe พร้อมแล้ว - ส่งข้อมูล LIFF');
-            sendProfile();
-          }
-        });
-
-        // โหลด iframe
-        iframe.src = GAS_EXEC_URL;
+        // เข้ารหัสข้อมูลเป็น Base64 เพื่อหลีกเลี่ยง OAuth redirect
+        const encoded = btoa(JSON.stringify(liffProfile));
         
-        // สำรอง: ถ้า iframe ไม่ส่งสัญญาณ ให้ส่งหลังจาก 2 วินาที
-        iframe.onload = () => {
-          setTimeout(sendProfile, 2000);
-        };
+        console.log('🔐 Encoded LIFF data');
+
+        // โหลด iframe พร้อม encoded data
+        iframe.src = `${GAS_EXEC_URL}?liffdata=${encodeURIComponent(encoded)}`;
 
         loading.style.display = 'none';
         iframe.style.display = 'block';
