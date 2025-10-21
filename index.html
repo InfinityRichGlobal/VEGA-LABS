@@ -20,7 +20,7 @@
   <div class="wrap">
     <div id="loading" class="loader">
       <div class="spinner"></div>
-      <div>กำลังเตรียมแบบฟอร์ม…</div>
+      <div>L o a d i n g … </div>
       <div class="muted">โปรดรอสักครู่</div>
     </div>
     <iframe id="myIframe" class="frame" style="display:none"></iframe>
@@ -31,6 +31,9 @@
     const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
     const iframe  = document.getElementById('myIframe');
     const loading = document.getElementById('loading');
+    
+    // ✅ เก็บ userId ไว้ส่งให้ iframe ภายหลัง
+    let CURRENT_USER_ID = '';
     
     (async () => {
       const usp = new URLSearchParams(location.search);
@@ -54,7 +57,7 @@
           return;
         }
         
-        // ✅ ดึงข้อมูล LIFF (เหมือนระบบเก่า)
+        // ✅ ดึงข้อมูล LIFF
         const profile = await liff.getProfile();
         const decodedToken = liff.getDecodedIDToken();
         
@@ -64,17 +67,33 @@
           pictureUrl: profile.pictureUrl || ''
         };
         
+        CURRENT_USER_ID = liffData.userId;
+        
         console.log('✅ LIFF Profile:', liffData);
         
-        // ✅ ส่งผ่าน URL parameters (แบบเดียวกับระบบเก่า)
+        // ✅ ส่งบันทึกลง Sheet "Log" ทันทีที่เข้ามา
+        await fetch(GAS_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            action: 'logVisit',
+            userId: liffData.userId,
+            displayName: liffData.displayName,
+            pictureUrl: liffData.pictureUrl
+          })
+        }).then(res => res.text()).then(data => {
+          console.log('📝 Logged to Sheet:', data);
+        }).catch(err => {
+          console.warn('⚠️ Log failed:', err);
+        });
+        
+        // ✅ โหลด iframe พร้อมส่ง userId
         const params = new URLSearchParams({
-          luid: liffData.userId,
-          lname: liffData.displayName,
-          lpict: liffData.pictureUrl
+          uid: liffData.userId
         });
         
         iframe.src = `${GAS_EXEC_URL}?${params.toString()}`;
-        console.log('📤 Sent LIFF via URL params');
+        console.log('📤 Loaded iframe with userId:', liffData.userId);
         
         loading.style.display = 'none';
         iframe.style.display = 'block';
