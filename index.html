@@ -25,54 +25,51 @@
     </div>
     <iframe id="myIframe" class="frame" style="display:none"></iframe>
   </div>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
+    // === ใส่ค่าจริงของโปรเจกต์คุณ ===
     const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
     const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
+
     const iframe  = document.getElementById('myIframe');
     const loading = document.getElementById('loading');
-    
-    // ✅ เก็บ userId ไว้ใน window เพื่อให้ iframe เข้าถึงได้
+
     window.VEGA_USER_ID = '';
-    
+
     (async () => {
       const usp = new URLSearchParams(location.search);
-      
-      // โหมดเทส (ไม่ใช้ LIFF)
+
+      // โหมดเทส: ไม่ใช้ LIFF แต่ส่ง uid มือได้ เช่น ?noliff=1&uid=Uxxxx
       if (usp.get('noliff') === '1') {
-        iframe.src = GAS_EXEC_URL;
+        const uid = usp.get('uid') || '';
+        iframe.src = GAS_EXEC_URL + (uid ? `?uid=${encodeURIComponent(uid)}` : '');
         loading.style.display = 'none';
         iframe.style.display = 'block';
         return;
       }
-      
+
       try {
-        await liff.init({ 
-          liffId: MY_LIFF_ID,
-          withLoginOnExternalBrowser: true 
-        });
-        
+        await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
+
         if (!liff.isLoggedIn()) {
           liff.login({ redirectUri: location.href });
           return;
         }
-        
-        // ✅ ดึงข้อมูล LIFF
+
         const profile = await liff.getProfile();
         const decodedToken = liff.getDecodedIDToken();
-        
         const liffData = {
           userId: decodedToken?.sub || profile.userId || '',
           displayName: profile.displayName || '',
           pictureUrl: profile.pictureUrl || ''
         };
-        
+
         console.log('✅ LIFF Profile:', liffData);
-        
-        // ✅ เก็บ userId ไว้ใน window
         window.VEGA_USER_ID = liffData.userId;
-        
-        // ✅ ส่งข้อมูล LIFF ไปบันทึกใน Log Sheet ทันที
+
+        // บันทึก Log ทันที
+        console.log('🚀 sending log to GAS');
         await fetch(GAS_EXEC_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -82,23 +79,21 @@
             displayName: liffData.displayName,
             pictureUrl: liffData.pictureUrl
           })
-        }).then(res => res.json())
-          .then(data => {
-            console.log('📝 Logged to Sheet:', data);
-          })
-          .catch(err => {
-            console.warn('⚠️ Log failed:', err);
-          });
-        
-        // โหลด iframe
-        iframe.src = GAS_EXEC_URL;
-        console.log('📤 Loaded iframe');
-        
+        })
+        .then(async r => {
+          const txt = await r.text();
+          console.log('✅ fetch ok', r.status, txt);
+        })
+        .catch(err => console.error('❌ fetch error', err));
+
+        // โหลด iframe พร้อม uid
+        iframe.src = GAS_EXEC_URL + `?uid=${encodeURIComponent(liffData.userId)}`;
         loading.style.display = 'none';
         iframe.style.display = 'block';
-        
+
       } catch (e) {
         console.warn('⚠️ LIFF failed:', e);
+        // fallback: เปิดฟอร์มได้แม้ไม่มี uid (แต่จะไม่มีข้อมูล liff บน Responsive)
         iframe.src = GAS_EXEC_URL;
         loading.style.display = 'none';
         iframe.style.display = 'block';
