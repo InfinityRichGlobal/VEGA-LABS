@@ -6,96 +6,73 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Wanvera Vega Wellness ASS." />
   <link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1ppuPNX6BJETu6uPbgaoUZboUh6Eh7GGm" />
+
+  <!-- เร่งการเชื่อมต่อ -->
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+
   <style>
-    html,body { height:100%; margin:0; font-family: system-ui, Arial; background:#f7fafc; }
-    .wrap { height:100%; display:grid; place-items:center; }
-    .frame { width:100%; height:100vh; border:0; background:#fff; }
-    .loader { display:grid; place-items:center; gap:8px; color:#374151; }
-    .spinner{ width:36px; height:36px; border:3px solid #e5e7eb; border-top-color:#0ea5e9; border-radius:50%; animation:spin 1s linear infinite }
-    @keyframes spin{to{ transform:rotate(360deg) }}
-    .muted { color:#6b7280; font-size:12px; }
+    html,body{height:100%;margin:0;background:#fff;font-family:system-ui,Arial}
+    .frame{width:100%;height:100dvh;border:0;display:none;background:#fff}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="loading" class="loader">
-      <div class="spinner"></div>
-      <div>l o a d i n g…</div>
-      <div class="muted">โปรดรอสักครู่</div>
-    </div>
-    <iframe id="myIframe" class="frame" style="display:none"></iframe>
-  </div>
+  <!-- ไม่มีสปินเนอร์/ข้อความ เพิ่มความเรียบ -->
+  <iframe id="myIframe" class="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // === ใส่ค่าจริงของโปรเจกต์คุณ ===
+    // === ค่าจริงของโปรเจกต์คุณ ===
     const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbztXqbQWNcw751NYq5QkMal5PAEJvOJTtrtK6YIXGbbdo_GvITWIQQuaEi0rfxPogY/exec';
     const MY_LIFF_ID   = '2008326648-y8Q2LBOo';
 
-    const iframe  = document.getElementById('myIframe');
-    const loading = document.getElementById('loading');
-
-    window.VEGA_USER_ID = '';
+    const iframe = document.getElementById('myIframe');
 
     (async () => {
+      // เก็บพารามิเตอร์เดิมไว้ (ยกเว้น uid ถ้ามี)
       const usp = new URLSearchParams(location.search);
+      usp.delete('uid');
 
-      // โหมดเทส: ไม่ใช้ LIFF แต่ส่ง uid มือได้ เช่น ?noliff=1&uid=Uxxxx
-      if (usp.get('noliff') === '1') {
-        const uid = usp.get('uid') || '';
-        iframe.src = GAS_EXEC_URL + (uid ? `?uid=${encodeURIComponent(uid)}` : '');
-        loading.style.display = 'none';
-        iframe.style.display = 'block';
-        return;
-      }
+      // ใช้ redirectUri แบบไม่ติด hash
+      const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? `?${usp.toString()}` : '');
 
       try {
         await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
 
         if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: location.href });
-          return;
+          liff.login({ redirectUri: REDIRECT_URI });
+          return; // จะถูกรีไดเรกต์ออกไป
         }
 
-        const profile = await liff.getProfile();
-        const decodedToken = liff.getDecodedIDToken();
-        const liffData = {
-          userId: decodedToken?.sub || profile.userId || '',
-          displayName: profile.displayName || '',
-          pictureUrl: profile.pictureUrl || ''
-        };
+        // ล็อกอินแล้ว → ดึงโปรไฟล์เพื่อเอา userId
+        const profile      = await liff.getProfile().catch(() => ({}));
+        const decodedToken = liff.getDecodedIDToken?.() || {};
+        const userId       = decodedToken.sub || profile.userId || '';
 
-        console.log('✅ LIFF Profile:', liffData);
-        window.VEGA_USER_ID = liffData.userId;
+        // ยิง log (ไม่บล็อก UI)
+        if (userId) {
+          fetch(GAS_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'logLiff',
+              userId,
+              displayName: profile.displayName || '',
+              pictureUrl: profile.pictureUrl || ''
+            })
+          }).catch(()=>{});
+        }
 
-        // บันทึก Log ทันที
-        console.log('🚀 sending log to GAS');
-        await fetch(GAS_EXEC_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            action: 'logLiff',
-            userId: liffData.userId,
-            displayName: liffData.displayName,
-            pictureUrl: liffData.pictureUrl
-          })
-        })
-        .then(async r => {
-          const txt = await r.text();
-          console.log('✅ fetch ok', r.status, txt);
-        })
-        .catch(err => console.error('❌ fetch error', err));
-
-        // โหลด iframe พร้อม uid
-        iframe.src = GAS_EXEC_URL + `?uid=${encodeURIComponent(liffData.userId)}`;
-        loading.style.display = 'none';
+        // เปิด iframe พร้อม uid ทันที
+        const params = new URLSearchParams(usp);
+        if (userId) params.set('uid', userId);
+        const url = GAS_EXEC_URL + (params.toString() ? `?${params.toString()}` : '');
+        iframe.src = url;
         iframe.style.display = 'block';
 
       } catch (e) {
-        console.warn('⚠️ LIFF failed:', e);
-        // fallback: เปิดฟอร์มได้แม้ไม่มี uid (แต่จะไม่มีข้อมูล liff บน Responsive)
+        // ถ้า init ผิดพลาด (เช่น โดนบล็อคสคริปต์) ให้แสดงฟอร์มเปล่าเป็น fallback
         iframe.src = GAS_EXEC_URL;
-        loading.style.display = 'none';
         iframe.style.display = 'block';
       }
     })();
