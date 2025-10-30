@@ -45,8 +45,8 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     /* ✅ CONFIG ONLY  */
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzKDQTfy86iMg6KGb4eT3f0YjvnQ8GsKQhz_or1TmYlrHL_ZqVOFdhJc5EF6E51VMCt/exec";   // ← ใส่ของคุณ
-    const MY_LIFF_ID   = "2008326648-1rvaEdLR";                // ← ใส่ของคุณ
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzKDQTfy86iMg6KGb4eT3f0YjvnQ8GsKQhz_or1TmYlrHL_ZqVOFdhJc5EF6E51VMCt/exec";
+    const MY_LIFF_ID   = "2008326648-1rvaEdLR";
 
     const frame = document.getElementById("frame");
     const loading = document.getElementById("loading");
@@ -75,7 +75,7 @@
             headers:{ "Content-Type":"application/x-www-form-urlencoded" },
             body:new URLSearchParams({
               action: "logLiff",
-              userId,
+              userId: uid,                               /* ←← แก้เป็น uid */
               displayName: profile.displayName || "",
               pictureUrl: profile.pictureUrl || ""
             })
@@ -85,7 +85,7 @@
         const params = new URLSearchParams(usp);
         if(uid) params.set("uid", uid);
 
-        frame.src = GAS_EXEC_URL + "?" + params.toString();
+        frame.src = GAS_EXEC_URL + (params.toString() ? `?${params.toString()}` : "");
       }catch(err){
         frame.src = GAS_EXEC_URL;
       }finally{
@@ -97,5 +97,3 @@
 
 </body>
 </html>
-
-
