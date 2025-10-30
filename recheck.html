@@ -2,112 +2,123 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>VEGA LABS</title>
-  <!-- สำคัญ: เปิด edge-to-edge เต็มหน้าจอจริง -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="VEGA LABS ASS." />
+  <title>Vega Labs | Access Portal</title>
+  <meta name="description" content="Vega | Access Portal" />
   <link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
 
-  <!-- เร่งการเชื่อมต่อ -->
-  <link rel="preconnect" href="https://script.google.com" crossorigin>
-  <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
-
   <style>
-    :root{
-      --bg:#fff; --ink:#111827;
-      /* เผื่อมี notch (iOS/LINE) */
+    :root{ 
+      --bg:#f5f6f7; 
+      --ink:#111827;
       --safe-top: env(safe-area-inset-top);
       --safe-right: env(safe-area-inset-right);
       --safe-bottom: env(safe-area-inset-bottom);
       --safe-left: env(safe-area-inset-left);
     }
-    /* ล้างทุกอย่างให้กางเต็มจริง ๆ */
-    html, body {
-      margin:0; padding:0; height:100%;
-      background:var(--bg); color:var(--ink);
-      font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      overflow:hidden; /* กันการเลื่อนที่ตัวแม่ */
+
+    /* กางเต็มจอจริง ๆ: header auto + iframe 1fr */
+    html, body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;
     }
-    /* กัน CSS ภายนอกหรือ theme ไปกำหนดความกว้างสูงสุด */
-    html, body, #app, #wrap {
-      max-width:none !important;
-    }
-    /* Iframe เต็มจอแบบ fixed + safe-area */
-    .frame {
-      position:fixed;
-      inset:0;               /* top/right/bottom/left = 0 */
-      width:100vw;
-      height:100svh;         /* ดีกว่า 100vh บนมือถือ */
-      border:0;
-      display:block;         /* โชว์ทันทีตามที่ต้องการ */
-      background:#fff;
-      padding-top:var(--safe-top);
-      padding-right:var(--safe-right);
-      padding-bottom:var(--safe-bottom);
-      padding-left:var(--safe-left);
+    body{
+      min-height:100svh;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       box-sizing:border-box;
+      overflow:hidden; /* กันการเลื่อนที่ body */
     }
 
-    /* ป้องกัน flex/center ใด ๆ ใน body ที่อาจเคยทำให้ดู “แคป” */
-    body { display:block; }
+    header{
+      text-align:center;
+      padding:12px 8px 6px;
+    }
+    header .main{font-size:1.4rem;font-weight:700;letter-spacing:.6px}
+    header .sub{font-size:.9rem;font-weight:400;opacity:.7;margin-top:4px}
+
+    #loading{
+      text-align:center;
+      font-size:.9rem;
+      opacity:.7;
+      padding:6px 0 10px;
+    }
+
+    /* iframe ต้องกินพื้นที่ที่เหลือทั้งหมด */
+    #frame{
+      width:100vw;     /* กว้างสุดขอบ viewport */
+      height:100%;     /* สูงเท่าพื้นที่แถวที่ 2 (1fr) */
+      border:0;
+      background:#fff;
+      display:none;    /* โชว์เมื่อพร้อม */
+    }
   </style>
 </head>
 <body>
-  <iframe id="myIframe" class="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <header>
+    <div class="main">VEGA LABS | ACCESS PORTAL</div>
+    <div class="sub">ระบบบันทึกและตรวจสอบออเดอร์</div>
+    <div id="loading">กำลังโหลดระบบ...</div>
+  </header>
+
+  <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // === ค่าจริงของโปรเจกต์คุณ ===
-    const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
-    const MY_LIFF_ID   = '2008326648-y4KXg6Ax';
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzKDQTfy86iMg6KGb4eT3f0YjvnQ8GsKQhz_or1TmYlrHL_ZqVOFdhJc5EF6E51VMCt/exec";
+    const MY_LIFF_ID   = "2008326648-1rvaEdLR";
 
-    const iframe = document.getElementById('myIframe');
+    const frame   = document.getElementById("frame");
+    const loading = document.getElementById("loading");
 
     (async () => {
-      // เก็บพารามิเตอร์เดิมไว้ (ลบ uid เดิมกันซ้ำ)
       const usp = new URLSearchParams(location.search);
-      usp.delete('uid');
+      usp.delete("uid");
 
-      // redirectUri แบบสะอาด (ไม่มี hash / uid ซ้ำ)
-      const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? `?${usp.toString()}` : '');
+      // แก้บั๊ก template string ตรงนี้
+      const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? `?${usp.toString()}` : "");
 
-      try {
-        await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
+      try{
+        await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser:true });
 
-        if (!liff.isLoggedIn()) {
+        if(!liff.isLoggedIn()){
           liff.login({ redirectUri: REDIRECT_URI });
-          return; // จะรีไดเรกต์ไปล็อกอินแล้วกลับมา
+          return;
         }
 
-        // ล็อกอินแล้ว → ดึง userId
-        const profile      = await liff.getProfile().catch(() => ({}));
-        const decodedToken = liff.getDecodedIDToken?.() || {};
-        const userId       = decodedToken.sub || profile.userId || '';
+        const profile = await liff.getProfile().catch(()=>({}));
+        const decoded = liff.getDecodedIDToken?.() || {};
+        const uid     = decoded.sub || profile.userId || "";
 
-        // ส่ง log ไป GAS (non-blocking)
-        if (userId) {
+        if(uid){
+          // ส่ง log แบบ non-blocking
           fetch(GAS_EXEC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'logLiff',
-              userId,
-              displayName: profile.displayName || '',
-              pictureUrl: profile.pictureUrl || ''
+            method:"POST",
+            headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+            body:new URLSearchParams({
+              action     : "logLiff",
+              userId     : uid,              /* ← ใช้ uid ที่นี่ */
+              displayName: profile.displayName || "",
+              pictureUrl : profile.pictureUrl  || ""
             })
           }).catch(()=>{});
         }
 
-        // เปิด iframe พร้อม uid
         const params = new URLSearchParams(usp);
-        if (userId) params.set('uid', userId);
-        iframe.src = GAS_EXEC_URL + (params.toString() ? `?${params.toString()}` : '');
+        if(uid) params.set("uid", uid);
 
-      } catch (e) {
-        // Fallback: ถ้า LIFF ใช้งานไม่ได้ ให้เปิด iframe ตรง ๆ
-        iframe.src = GAS_EXEC_URL;
+        // แก้บั๊ก template string ตรงนี้ด้วย
+        frame.src = GAS_EXEC_URL + (params.toString() ? `?${params.toString()}` : "");
+      }catch(err){
+        frame.src = GAS_EXEC_URL;
+      }finally{
+        loading.style.display = "none";
+        frame.style.display = "block";
       }
-      // ไม่ต้องซ่อน/แสดงภายหลัง — แสดง block ตั้งแต่แรกเพื่อไม่ให้ “แคป”
     })();
   </script>
 </body>
