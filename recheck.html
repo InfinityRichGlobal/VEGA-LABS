@@ -7,35 +7,43 @@
   <meta name="description" content="Vega | Access Portal" />
   <link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
   <style>
-    :root{
-      --bg:#f5f6f7;
-      --ink:#111827;
-    }
-
+    :root{ --bg:#f5f6f7; --ink:#111827; }
+    body{ margin:0; background:var(--bg); color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto; }
     header{text-align:center;margin-bottom:14px;margin-top:15px}
     header .main{font-size:1.4rem;font-weight:700;letter-spacing:.6px}
     header .sub{font-size:.9rem;font-weight:400;opacity:.6;margin-top:4px}
     #frame{width:100%;height:calc(100dvh - 110px);border:0;background:#fff;display:none}
     #loading{margin-top:14px;font-size:.9rem;opacity:.6}
+    /* ทำให้คำว่า VEGA ดูคลิกได้ */
+    #brandRefresh {
+  cursor: pointer;
+  color: inherit;          /* ใช้สีเดียวกับข้อความปกติ */
+  text-decoration: none;   /* ห้ามเป็นลิงก์ */
+  transition: opacity .2s; /* ทำให้ตอน hover ดูเนียน */
+}
+
+#brandRefresh:hover {
+  opacity: 0.6;            /* ให้รู้ว่ากดได้ แต่ไม่ดูเป็นลิงก์ */
+}
+
   </style>
 </head>
 <body>
 <header>
-  <div class="main">VEGA LABS | ACCESS PORTAL</div>
+  <div class="main"><span id="brandRefresh">VEGA</span> LABS | ACCESS PORTAL</div>
+
   <div class="sub">ระบบบันทึกและตรวจสอบออเดอร์</div>
   <div id="loading">กำลังโหลดระบบ...</div>
 </header>
-
-
 
 <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzKDQTfy86iMg6KGb4eT3f0YjvnQ8GsKQhz_or1TmYlrHL_ZqVOFdhJc5EF6E51VMCt/exec";
-  const MY_LIFF_ID = "2008326648-1rvaEdLR";
+  const MY_LIFF_ID   = "2008326648-1rvaEdLR";
 
-  const frame = document.getElementById("frame");
+  const frame   = document.getElementById("frame");
   const loading = document.getElementById("loading");
 
   (async () => {
@@ -45,6 +53,20 @@
 
       // ✅ กำหนด redirect uri กลับมาหน้าเดิม
       const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? ("?" + usp.toString()) : "");
+
+      // ✅ ปุ่มรีเฟรชเมื่อคลิก "VEGA"
+      const brand = document.getElementById('brandRefresh');
+      brand?.addEventListener('click', (e) => {
+        e.preventDefault();
+        // ——— แบบ Soft refresh (แนะนำ): รีโหลดหน้านี้
+        location.replace(REDIRECT_URI);
+
+        // ——— ถ้าต้องการ “บังคับ re-auth” (token ใหม่) ให้ใช้ด้านล่างแทน:
+        // if (typeof liff !== 'undefined') {
+        //   try { liff.logout(); } catch(e){}
+        //   liff.login({ redirectUri: REDIRECT_URI });
+        // }
+      });
 
       // ✅ เริ่ม LIFF
       await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
@@ -77,7 +99,6 @@
       // ✅ ต่อพารามิเตอร์ uid เข้า iframe
       const params = new URLSearchParams(usp);
       if (uid) params.set("uid", uid);
-
       frame.src = GAS_EXEC_URL + "?" + params.toString();
 
     } catch (e) {
