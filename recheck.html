@@ -8,32 +8,20 @@
   <link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1cqrmGHF5k12P-cP6P5TQtM2jPAqBMLSN" />
 
   <style>
-    :root{
-      --bg:#f5f6f7;
-      --ink:#111827;
-    }
+    :root{ --bg:#f5f6f7; --ink:#111827; }
     html,body{
-      height:100%;margin:0;
-      background:var(--bg);
-      display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;
-      color:var(--ink);
+      height:100%;margin:0;background:var(--bg);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;color:var(--ink);
     }
     header{text-align:center;margin-bottom:14px}
     header .main{font-size:1.4rem;font-weight:700;letter-spacing:.6px}
     header .sub{font-size:.9rem;font-weight:400;opacity:.6;margin-top:4px}
-
-    #frame{
-      width:100%;
-      height:calc(100dvh - 110px);
-      border:0;background:#fff;display:none;
-    }
+    #frame{width:100%;height:calc(100dvh - 110px);border:0;background:#fff;display:none}
     #loading{margin-top:14px;font-size:.9rem;opacity:.6}
   </style>
 </head>
 <body>
-
   <header>
     <div class="main">VEGA LABS | ACCESS PORTAL</div>
     <div class="sub">ระบบบันทึกและตรวจสอบออเดอร์</div>
@@ -44,7 +32,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    /* ✅ CONFIG ONLY  */
     const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzKDQTfy86iMg6KGb4eT3f0YjvnQ8GsKQhz_or1TmYlrHL_ZqVOFdhJc5EF6E51VMCt/exec";
     const MY_LIFF_ID   = "2008326648-1rvaEdLR";
 
@@ -54,7 +41,6 @@
     (async () => {
       const usp = new URLSearchParams(location.search);
       usp.delete("uid");
-
       const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? `?${usp.toString()}` : "");
 
       try{
@@ -74,10 +60,10 @@
             method:"POST",
             headers:{ "Content-Type":"application/x-www-form-urlencoded" },
             body:new URLSearchParams({
-              action: "logLiff",
-              userId: uid,                               /* ←← แก้เป็น uid */
+              action     : "logLiff",
+              userId     : uid,                        /* ← แก้จุดนี้ */
               displayName: profile.displayName || "",
-              pictureUrl: profile.pictureUrl || ""
+              pictureUrl : profile.pictureUrl  || ""
             })
           }).catch(()=>{});
         }
@@ -94,6 +80,5 @@
       }
     })();
   </script>
-
 </body>
 </html>
