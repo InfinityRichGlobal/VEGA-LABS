@@ -9,55 +9,47 @@
 
   <style>
     :root{ 
-      --bg:#f5f6f7; 
+      --bg:#f5f6f7;
       --ink:#111827;
-      --safe-top: env(safe-area-inset-top);
-      --safe-right: env(safe-area-inset-right);
-      --safe-bottom: env(safe-area-inset-bottom);
-      --safe-left: env(safe-area-inset-left);
     }
 
-    /* กางเต็มจอจริง ๆ: header auto + iframe 1fr */
-    html, body{
-      height:100%;
+    html,body{
       margin:0;
+      height:100%;
       background:var(--bg);
-      color:var(--ink);
       font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;
-    }
-    body{
-      min-height:100svh;
+      color:var(--ink);
       display:grid;
       grid-template-rows:auto 1fr;
-      padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-      box-sizing:border-box;
-      overflow:hidden; /* กันการเลื่อนที่ body */
+      overflow:hidden;
     }
 
     header{
       text-align:center;
-      padding:12px 8px 6px;
+      padding:12px 0 4px;
     }
     header .main{font-size:1.4rem;font-weight:700;letter-spacing:.6px}
-    header .sub{font-size:.9rem;font-weight:400;opacity:.7;margin-top:4px}
+    header .sub{font-size:.9rem;font-weight:400;opacity:.6;margin-top:4px}
+    #loading{font-size:.9rem;opacity:.6;margin-top:4px;}
 
-    #loading{
-      text-align:center;
-      font-size:.9rem;
-      opacity:.7;
-      padding:6px 0 10px;
+    /* ✅ iframe clamp ระยะ 15px รอบด้าน */
+    .frame-wrapper{
+      padding:15px;
+      height:100%;
+      box-sizing:border-box;
     }
 
-    /* iframe ต้องกินพื้นที่ที่เหลือทั้งหมด */
     #frame{
-      width:100vw;     /* กว้างสุดขอบ viewport */
-      height:100%;     /* สูงเท่าพื้นที่แถวที่ 2 (1fr) */
+      width:100%;
+      height:100%;
       border:0;
+      display:none;
       background:#fff;
-      display:none;    /* โชว์เมื่อพร้อม */
+      border-radius:10px;   /* ถ้าไม่ต้องการขอบมน ลบได้ */
     }
   </style>
 </head>
+
 <body>
   <header>
     <div class="main">VEGA LABS | ACCESS PORTAL</div>
@@ -65,7 +57,9 @@
     <div id="loading">กำลังโหลดระบบ...</div>
   </header>
 
-  <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="frame-wrapper">
+    <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
@@ -76,10 +70,10 @@
     const loading = document.getElementById("loading");
 
     (async () => {
+
       const usp = new URLSearchParams(location.search);
       usp.delete("uid");
 
-      // แก้บั๊ก template string ตรงนี้
       const REDIRECT_URI = location.origin + location.pathname + (usp.toString() ? `?${usp.toString()}` : "");
 
       try{
@@ -95,13 +89,12 @@
         const uid     = decoded.sub || profile.userId || "";
 
         if(uid){
-          // ส่ง log แบบ non-blocking
-          fetch(GAS_EXEC_URL, {
+          fetch(GAS_EXEC_URL,{
             method:"POST",
             headers:{ "Content-Type":"application/x-www-form-urlencoded" },
             body:new URLSearchParams({
-              action     : "logLiff",
-              userId     : uid,              /* ← ใช้ uid ที่นี่ */
+              action:"logLiff",
+              userId:uid,
               displayName: profile.displayName || "",
               pictureUrl : profile.pictureUrl  || ""
             })
@@ -111,14 +104,15 @@
         const params = new URLSearchParams(usp);
         if(uid) params.set("uid", uid);
 
-        // แก้บั๊ก template string ตรงนี้ด้วย
         frame.src = GAS_EXEC_URL + (params.toString() ? `?${params.toString()}` : "");
-      }catch(err){
+
+      } catch(err){
         frame.src = GAS_EXEC_URL;
-      }finally{
+      } finally {
         loading.style.display = "none";
         frame.style.display = "block";
       }
+
     })();
   </script>
 </body>
