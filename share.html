@@ -16,37 +16,31 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h3>กำลังเตรียมแชร์…</h3>
+      <h3 id="title">กำลังเตรียมแชร์…</h3>
       <div class="spinner"></div>
       <p id="msg">โปรดรอสักครู่</p>
     </div>
   </div>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
 <script>
-  const LIFF_ID = '2008326648-P8dmbpRZ';          // ← ของคุณ
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';            // ← ของคุณ (.../exec)
+  const LIFF_ID = '2008326648-P8dmbpRZ';          
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec';
 
   const el = (id)=>document.getElementById(id);
   const setMsg = (t,m)=>{ el('title').textContent=t; el('msg').textContent=m; };
 
-  // ✅ ดึงพารามิเตอร์แบบกันเหนียว (search, hash, href)
+  // ดึงพารามิเตอร์แบบกันเหนียว (search, hash, href)
   function getQSParam(name){
-    // 1) ปกติ
     const s1 = new URLSearchParams(location.search).get(name);
     if (s1) return s1;
-
-    // 2) ถูกย้ายไปหลัง #
     if (location.hash){
-      // รูปแบบที่เจอบ่อย: #/path?share=FX-...  หรือ #?share=FX-...
-      const hash = location.hash.replace(/^#\/?/, '');        // ตัด # หรือ #/
+      const hash = location.hash.replace(/^#\/?/, '');
       const qstr = hash.includes('?') ? hash.split('?')[1] : '';
       if (qstr){
         const s2 = new URLSearchParams(qstr).get(name);
         if (s2) return s2;
       }
     }
-
-    // 3) เผื่อโดนรีไรต์แปลกๆ: ดึงจาก href โดยตรง
     const m = location.href.match(new RegExp('[?&]'+name+'=([^&#]+)'));
     return m ? decodeURIComponent(m[1]) : null;
   }
