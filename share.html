@@ -6,31 +6,22 @@
   <title id="title">VEGA • Share Flex</title>
 
   <style>
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      background:#f7fafc;
-      color:#111;
+    :root{
+      --bg:#f7fafc; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+      --accent:#0ea5e9; --shadow:0 10px 30px rgba(2,6,23,.08); --radius:16px;
     }
-    .wrap{
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      padding:24px;
+    @media (prefers-color-scheme:dark){
+      :root{ --bg:#0b1220; --card:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --line:#1e293b; --shadow:0 10px 30px rgba(0,0,0,.35) }
     }
-    .card{
-      padding:20px;
-      max-width:520px;
-      width:100%;
-      text-align:center;
-    }
-    h3{ margin:0 0 10px }
-    .spinner{
-      width:36px;height:36px;
-      animation:spin 1s linear infinite;
-      margin:12px auto;
-    }
-    @keyframes spin{ to{ transform: rotate(360deg) } }
+    *{ box-sizing:border-box } html,body{ height:100% }
+    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--ink) }
+    .wrap{ min-height:100vh; display:grid; place-items:center; padding:24px }
+    .card{ width:100%; max-width:520px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); border-radius:var(--radius); padding:24px 22px; text-align:center }
+    h3{ margin:0 0 8px; font-size:1.125rem; letter-spacing:.2px }
+    p{ margin:6px 0 0; color:var(--muted); font-size:.95rem }
+    .spinner{ width:38px; height:38px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin:14px auto 6px }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+    .hint{ margin-top:14px; font-size:.8rem; color:var(--muted); opacity:.85 }
   </style>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,52 +30,49 @@
   <div class="wrap">
     <div class="card">
       <h3 id="head">กำลังเตรียมแชร์…</h3>
-      <div class="spinner"></div>
+      <div class="spinner" aria-hidden="true"></div>
       <p id="msg">โปรดรอสักครู่</p>
+      <p class="hint" id="hint"></p>
     </div>
   </div>
 
 <script>
 /* ---------------- CONFIG ---------------- */
-const LIFF_ID = "2008326648-P8dmbpRZ";   // ← ใส่ LIFF ID share-target-picker
+// เปลี่ยนเป็น GAS URL ของคุณ
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec";
 
 /* ---------------- Utils ---------------- */
 const el = (id)=>document.getElementById(id);
-const setMsg = (title, message)=>{
+const setMsg = (title, message, hint="")=>{
   el("head").textContent = title;
   el("msg").textContent = message;
+  el("hint").textContent = hint;
   document.title = title;
 };
 
-/* ✅ ดึงค่า shareId — รองรับทุกรูปแบบ URL (search, hash, liff.state, redirectUri) */
 function getQSParam(name){
-  // 1: query ปกติ ?share=FX-xxxx
   const q1 = new URLSearchParams(location.search).get(name);
   if (q1) return q1;
 
-  // 2: อยู่หลัง hash (#/?share=xxxx)
   if (location.hash){
     const hash = location.hash.replace(/^#\/?/, "");
-    const hq = hash.includes("?") ? hash.split("?")[1] : "";
-    if (hq){
-      const q2 = new URLSearchParams(hq).get(name);
+    const qs = hash.includes("?") ? hash.split("?")[1] : "";
+    if (qs){
+      const q2 = new URLSearchParams(qs).get(name);
       if (q2) return q2;
     }
   }
 
-  // 3: LIFF ย้าย parameter ไว้ใน liff.state
   const state = new URLSearchParams(location.search).get("liff.state");
   if (state){
-    const s = decodeURIComponent(state);
-    const qs = s.split("?")[1];
-    if (qs){
+    try{
+      const s = decodeURIComponent(state);
+      const qs = s.split("?")[1] || "";
       const q3 = new URLSearchParams(qs).get(name);
       if (q3) return q3;
-    }
+    }catch(e){}
   }
 
-  // 4: บางครั้งอยู่ใน redirectUri
   const redirect = new URLSearchParams(location.search).get("liff.redirectUri");
   if (redirect){
     try{
@@ -94,21 +82,40 @@ function getQSParam(name){
     }catch(e){}
   }
 
-  // 5: เผื่อโดน rewrite แปลก ๆ
-  const match = location.href.match(new RegExp("[?&]"+name+"=([^&#]+)"));
-  return match ? decodeURIComponent(match[1]) : null;
+  const m = location.href.match(new RegExp("[?&]"+name+"=([^&#]+)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function getConfig(){
+  const res = await fetch(GAS_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ action:"getConfig" })
+  });
+  const data = await res.json();
+  return data || {};
 }
 
 /* ---------------- RUN ---------------- */
 (async () => {
   const flexId = getQSParam("share");
   if (!flexId){
-    setMsg("ไม่พบรหัสสำหรับแชร์", "missing ?share=");
+    setMsg("ไม่พบรหัสสำหรับแชร์", "missing ?share=", "ตรวจสอบลิงก์: ต้องมีพารามิเตอร์ ?share=FLEX_ID");
     return;
   }
 
   try{
-    await liff.init({ liffId: LIFF_ID });
+    // ดึง LIFF_ID จากชีตผ่าน GAS
+    setMsg("กำลังเตรียมแชร์…", "กำลังดึงการตั้งค่า");
+    const cfg = await getConfig();
+    const liffId = cfg.liff_id_share || "";
+
+    if (!liffId){
+      setMsg("การตั้งค่าไม่สมบูรณ์", "ไม่พบ liff_id_share ในชีต Structure", "คีย์: liff_id_share (คอลัมน์ A) / ค่า: LIFF ID (คอลัมน์ B)");
+      return;
+    }
+
+    await liff.init({ liffId });
     if (!liff.isLoggedIn()){
       liff.login({ redirectUri: location.href });
       return;
@@ -119,12 +126,12 @@ function getQSParam(name){
     const res = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type":"application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ action:"getFlexById", flexId: flexId })
+      body: new URLSearchParams({ action:"getFlexById", flexId })
     });
 
     const data = await res.json();
     if (data.status !== "success" || !data.flex){
-      setMsg("ไม่พบข้อมูล FLEX", "ตรวจสอบว่า flex_id ถูกต้องหรือหมดอายุ");
+      setMsg("ไม่พบข้อมูล FLEX", "ตรวจสอบว่า flex_id ถูกต้องหรือหมดอายุ", `flex_id: ${flexId}`);
       return;
     }
 
