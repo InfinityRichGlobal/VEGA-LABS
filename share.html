@@ -37,9 +37,11 @@
   </div>
 
 <script>
-/* ---------------- CONFIG ---------------- */
-// เปลี่ยนเป็น GAS URL ของคุณ
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec";
+/* ---------------- CONFIG: 2 GAS URLs ---------------- */
+const GAS_URLS = [
+  "https://script.google.com/macros/s/AKfycbzcc0iyuSyFxcR6xScstRrMUGNshVNImhcbqT3acDUapY51BRbGIpyyeUxcqsxQOw/exec",
+  "https://script.google.com/macros/s/AKfycbztXqbQWNcw751NYq5QkMal5PAEJvOJTtrtK6YIXGbbdo_GvITWIQQuaEi0rfxPogY/exec"
+];
 
 /* ---------------- Utils ---------------- */
 const el = (id)=>document.getElementById(id);
@@ -86,14 +88,44 @@ function getQSParam(name){
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-async function getConfig(){
-  const res = await fetch(GAS_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ action:"getConfig" })
-  });
-  const data = await res.json();
-  return data || {};
+/* ---------------- ✅ Fetch with Fallback (ลองหลาย URLs) ---------------- */
+async function fetchWithFallback(action, params = {}){
+  const body = new URLSearchParams({ action, ...params });
+  
+  for (let i = 0; i < GAS_URLS.length; i++) {
+    const url = GAS_URLS[i];
+    try {
+      console.log(`[TRY ${i+1}/${GAS_URLS.length}] Fetching: ${url}`);
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+
+      if (!res.ok) {
+        console.warn(`[TRY ${i+1}] HTTP ${res.status} - ลอง URL ถัดไป`);
+        continue;
+      }
+
+      const data = await res.json();
+      
+      // ถ้า response มี status: 'success' หรือมีข้อมูลที่ต้องการ
+      if (data && (data.status === 'success' || data.liff_id_share || data.flex)) {
+        console.log(`[SUCCESS] ใช้ URL: ${url}`);
+        return data;
+      }
+
+      console.warn(`[TRY ${i+1}] Response ไม่ถูกต้อง - ลอง URL ถัดไป`);
+    } catch (err) {
+      console.error(`[TRY ${i+1}] Error:`, err.message);
+      if (i === GAS_URLS.length - 1) {
+        throw new Error(`ไม่สามารถเชื่อมต่อ GAS ได้ทั้ง ${GAS_URLS.length} URLs`);
+      }
+    }
+  }
+
+  throw new Error('ไม่พบข้อมูลจากทุก URLs');
 }
 
 /* ---------------- RUN ---------------- */
@@ -105,9 +137,9 @@ async function getConfig(){
   }
 
   try{
-    // ดึง LIFF_ID จากชีตผ่าน GAS
+    // ✅ ดึง config (ลองหลาย URLs)
     setMsg("กำลังเตรียมแชร์…", "กำลังดึงการตั้งค่า");
-    const cfg = await getConfig();
+    const cfg = await fetchWithFallback("getConfig");
     const liffId = cfg.liff_id_share || "";
 
     if (!liffId){
@@ -121,15 +153,10 @@ async function getConfig(){
       return;
     }
 
+    // ✅ ดึง Flex (ลองหลาย URLs)
     setMsg("กำลังโหลดข้อมูล…", "กำลังดึง Flex จากเซิร์ฟเวอร์");
+    const data = await fetchWithFallback("getFlexById", { flexId });
 
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type":"application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ action:"getFlexById", flexId })
-    });
-
-    const data = await res.json();
     if (data.status !== "success" || !data.flex){
       setMsg("ไม่พบข้อมูล FLEX", "ตรวจสอบว่า flex_id ถูกต้องหรือหมดอายุ", `flex_id: ${flexId}`);
       return;
@@ -147,7 +174,7 @@ async function getConfig(){
 
   }catch(err){
     console.error(err);
-    setMsg("เกิดข้อผิดพลาด", "โปรดลองอีกครั้งหรือติดต่อแอดมิน");
+    setMsg("เกิดข้อผิดพลาด", err.message || "โปรดลองอีกครั้งหรือติดต่อแอดมิน");
   }
 })();
 </script>
